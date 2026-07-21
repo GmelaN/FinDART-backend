@@ -40,7 +40,10 @@ spec:
               value: {{ .Values.application.profile | quote }}
 
             - name: SPRING_DATASOURCE_URL
-              value: {{ .Values.database.url | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.secretName }}
+                  key: {{ .Values.database.urlKey }}
 
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
