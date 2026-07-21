@@ -16,6 +16,13 @@ service:
   port: 8080
   targetPort: 8080
 
+ingress:
+  enabled: true
+  className: traefik
+  host: findart.jshyeon.com
+  path: /
+  pathType: Prefix
+
 application:
   profile: prod
 
