@@ -18,7 +18,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: jshyeon/findart-backend
+  IMAGE_NAME: gmelan/findart-backend
 
 jobs:
   test-and-publish:
