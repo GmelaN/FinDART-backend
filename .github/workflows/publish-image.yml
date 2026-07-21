@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - master
+    paths-ignore:
+      - "helm/findart-backend/values.yaml"
 
   workflow_dispatch:
 
@@ -13,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
@@ -68,3 +70,33 @@ jobs:
             org.opencontainers.image.title=findart
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+
+      - name: Update Helm image tag
+        shell: bash
+        run: |
+          VALUES_FILE="helm/findart-backend/values.yaml"
+
+          sed -i -E \
+            's|^  tag:.*|  tag: "'"${GITHUB_SHA}"'"|' \
+            "${VALUES_FILE}"
+
+          echo "Updated image configuration:"
+          grep -A 3 '^image:' "${VALUES_FILE}"
+
+      - name: Commit Helm image tag
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add helm/findart-backend/values.yaml
+
+          if git diff --cached --quiet; then
+            echo "Image tag is already up to date."
+            exit 0
+          fi
+
+          git commit -m "deploy: update image to ${GITHUB_SHA::7} [skip ci]"
+          git push origin HEAD:main
