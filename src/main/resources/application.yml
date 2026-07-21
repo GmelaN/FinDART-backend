@@ -1,0 +1,32 @@
+spring:
+    application:
+        name: findart
+
+    datasource:
+        url: ${SPRING_DATASOURCE_URL:jdbc:mariadb://localhost:3306/findart}
+        username: ${SPRING_DATASOURCE_USERNAME:findart}
+        password: ${SPRING_DATASOURCE_PASSWORD:}
+        driver-class-name: org.mariadb.jdbc.Driver
+
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+    jpa:
+        database-platform: org.hibernate.dialect.MariaDBDialect
+        hibernate:
+            ddl-auto: create
+        open-in-view: false
+        properties:
+            hibernate:
+                format_sql: true
+
+server:
+    port: ${SERVER_PORT:8080}
+
+management:
+    endpoints:
+        web:
+        exposure:
+            include: health,info,prometheus
