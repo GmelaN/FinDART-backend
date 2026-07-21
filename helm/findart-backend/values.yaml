@@ -1,0 +1,51 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/gmelan/findart-backend
+  tag: "9e40d680117f283dd674b10af369bc279f4a94ab"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: ghcr-secret
+
+nameOverride: ""
+fullnameOverride: findart-backend
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+application:
+  profile: prod
+
+database:
+  url: jdbc:mariadb://10.1.0.200:3306/findart
+  secretName: findart-db-secret
+  usernameKey: username
+  passwordKey: password
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+probes:
+  startup:
+    enabled: true
+    failureThreshold: 30
+    periodSeconds: 5
+
+  readiness:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+  liveness:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 20
