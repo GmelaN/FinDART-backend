@@ -1,0 +1,12 @@
+.git
+.github
+.gradle
+build
+.idea
+*.iml
+
+.env
+.env.*
+application-local.yml
+
+README.md
