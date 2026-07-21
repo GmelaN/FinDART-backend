@@ -99,4 +99,4 @@ jobs:
           fi
 
           git commit -m "deploy: update image to ${GITHUB_SHA::7} [skip ci]"
-          git push origin HEAD:main
+          git push origin HEAD:master
