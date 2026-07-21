@@ -27,8 +27,8 @@ application:
   profile: prod
 
 database:
-  url: jdbc:mariadb://10.1.0.200:3306/findart
   secretName: findart-db-secret
+  urlKey: url
   usernameKey: username
   passwordKey: password
 
