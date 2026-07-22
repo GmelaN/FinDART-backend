@@ -1,5 +1,15 @@
 package com.jshyeon.findart.dto;
 
-public record IngestionResult(String id, int revision, Status status) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class IngestionResult {
+	private String id;
+	private int revision;
+	private Status status;
 	public enum Status { CREATED, DUPLICATE, REVISED }
 }

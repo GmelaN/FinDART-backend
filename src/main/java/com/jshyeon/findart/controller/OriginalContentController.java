@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,13 +28,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1")
 @Tag(name = "Original Content", description = "Raw source documents received from collectors")
+@RequiredArgsConstructor
 public class OriginalContentController {
 	private final OriginalContentService service;
-	public OriginalContentController(OriginalContentService service) { this.service = service; }
 	@PostMapping("/collector/original-contents")
 	public ResponseEntity<ApiResponse<IngestionResult>> ingest(@Valid @RequestBody OriginalContentIngestion request, HttpServletRequest servletRequest) {
 		IngestionResult result = service.ingest(request);
-		return ResponseEntity.status(result.status() == IngestionResult.Status.CREATED ? HttpStatus.CREATED : HttpStatus.OK)
+		return ResponseEntity.status(result.getStatus() == IngestionResult.Status.CREATED ? HttpStatus.CREATED : HttpStatus.OK)
 			.body(ApiResponse.success(result, RequestIdFilter.getRequestId(servletRequest)));
 	}
 	@GetMapping("/original-contents")

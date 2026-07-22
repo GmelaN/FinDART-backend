@@ -8,6 +8,22 @@ import com.jshyeon.findart.entity.ProcessedContentType;
 
 import tools.jackson.databind.JsonNode;
 
-public record ProcessedContentResponse(String id, ProcessedContentType contentType, String source, String externalId,
-	int revision, LocalDate effectiveDate, Instant publishedAt, Instant collectedAt, Set<String> originalContentIds,
-	JsonNode content) { }
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProcessedContentResponse {
+	private String id;
+	private ProcessedContentType contentType;
+	private String source;
+	private String externalId;
+	private int revision;
+	private LocalDate effectiveDate;
+	private Instant publishedAt;
+	private Instant collectedAt;
+	private Set<String> originalContentIds;
+	private JsonNode content;
+}

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,9 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/processed-contents")
 @Tag(name = "Processed Content", description = "Frontend-ready content and its original-content provenance")
+@RequiredArgsConstructor
 public class ProcessedContentController {
 	private final ContentQueryService queryService;
-	public ProcessedContentController(ContentQueryService queryService) { this.queryService = queryService; }
 	@GetMapping
 	public ApiResponse<PageResponse<ProcessedContentResponse>> list(@RequestParam(required = false) ProcessedContentType contentType,
 			@RequestParam(defaultValue = "0") @Min(0) int page, @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,

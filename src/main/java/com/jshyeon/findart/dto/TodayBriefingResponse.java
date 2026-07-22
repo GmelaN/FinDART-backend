@@ -4,9 +4,23 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-public record TodayBriefingResponse(
-	String id, LocalDate briefingDate, DailyBriefingIngestion.Mode mode, String title, String summary,
-	List<MarketRegime> market, List<ContentReference> headlines, List<ContentReference> issues,
-	List<TrackedIssue> issueTracking, List<MarketEvent> events, Instant publishedAt
-) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class TodayBriefingResponse {
+	private String id;
+	private LocalDate briefingDate;
+	private DailyBriefingIngestion.Mode mode;
+	private String title;
+	private String summary;
+	private List<MarketRegime> market;
+	private List<ContentReference> headlines;
+	private List<ContentReference> issues;
+	private List<TrackedIssue> issueTracking;
+	private List<MarketEvent> events;
+	private Instant publishedAt;
 }

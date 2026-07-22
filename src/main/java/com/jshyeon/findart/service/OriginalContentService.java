@@ -11,6 +11,7 @@ import com.jshyeon.findart.dto.OriginalContentResponse;
 import com.jshyeon.findart.entity.OriginalContent;
 import com.jshyeon.findart.entity.OriginalContentRepository;
 import com.jshyeon.findart.entity.OriginalContentType;
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,23 +19,23 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
+@RequiredArgsConstructor
 public class OriginalContentService {
 	private final OriginalContentRepository repository;
 	private final ObjectMapper objectMapper;
-	public OriginalContentService(OriginalContentRepository repository, ObjectMapper objectMapper) { this.repository = repository; this.objectMapper = objectMapper; }
 
 	@Transactional
 	public IngestionResult ingest(OriginalContentIngestion request) {
 		String canonical = json(request);
 		String checksum = sha256(canonical);
-		var latest = repository.findFirstByContentTypeAndSourceAndExternalIdOrderByRevisionDesc(request.contentType(), request.source(), request.externalId());
+		var latest = repository.findFirstByContentTypeAndSourceAndExternalIdOrderByRevisionDesc(request.getContentType(), request.getSource(), request.getExternalId());
 		if (latest.isPresent() && latest.get().getChecksum().equals(checksum)) {
 			return new IngestionResult(latest.get().getId(), latest.get().getRevision(), IngestionResult.Status.DUPLICATE);
 		}
 		int revision = latest.map(value -> value.getRevision() + 1).orElse(1);
-		OriginalContent stored = repository.save(new OriginalContent(request.contentType(), request.source(), request.externalId(), revision,
-			checksum, request.sourceUrl(), request.title(), request.publisher(), request.language() == null ? "ko" : request.language(),
-			request.rawBody(), json(request.attributes()), request.publishedAt(), request.collectedAt()));
+		OriginalContent stored = repository.save(new OriginalContent(request.getContentType(), request.getSource(), request.getExternalId(), revision,
+			checksum, request.getSourceUrl(), request.getTitle(), request.getPublisher(), request.getLanguage() == null ? "ko" : request.getLanguage(),
+			request.getRawBody(), json(request.getAttributes()), request.getPublishedAt(), request.getCollectedAt()));
 		return new IngestionResult(stored.getId(), revision, revision == 1 ? IngestionResult.Status.CREATED : IngestionResult.Status.REVISED);
 	}
 

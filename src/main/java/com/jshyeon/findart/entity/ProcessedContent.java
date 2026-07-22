@@ -15,9 +15,14 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "processed_contents")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProcessedContent {
 	@Id @Column(length = 36, updatable = false) private String id;
 	@Enumerated(EnumType.STRING) @Column(name = "content_type", length = 40, nullable = false) private ProcessedContentType contentType;
@@ -34,17 +39,11 @@ public class ProcessedContent {
 	@Column(name = "original_content_id", length = 36, nullable = false)
 	private Set<String> originalContentIds = new LinkedHashSet<>();
 
-	protected ProcessedContent() { }
 	public ProcessedContent(ProcessedContentType contentType, String source, String externalId, int revision, String checksum,
 			LocalDate effectiveDate, Instant publishedAt, Instant collectedAt, String payload, Set<String> originalContentIds) {
 		this.id = UUID.randomUUID().toString(); this.contentType = contentType; this.source = source; this.externalId = externalId;
 		this.revision = revision; this.checksum = checksum; this.effectiveDate = effectiveDate; this.publishedAt = publishedAt;
 		this.collectedAt = collectedAt; this.payload = payload; this.originalContentIds = new LinkedHashSet<>(originalContentIds);
 	}
-	public String getId() { return id; } public ProcessedContentType getContentType() { return contentType; }
-	public String getSource() { return source; } public String getExternalId() { return externalId; }
-	public int getRevision() { return revision; } public String getChecksum() { return checksum; }
-	public LocalDate getEffectiveDate() { return effectiveDate; } public Instant getPublishedAt() { return publishedAt; }
-	public Instant getCollectedAt() { return collectedAt; } public String getPayload() { return payload; }
 	public Set<String> getOriginalContentIds() { return Set.copyOf(originalContentIds); }
 }

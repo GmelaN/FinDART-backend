@@ -2,7 +2,19 @@ package com.jshyeon.findart.api;
 
 import java.time.Instant;
 
-public record ApiResponse<T>(boolean success, T data, ApiError error, Instant timestamp, String requestId) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ApiResponse<T> {
+	private boolean success;
+	private T data;
+	private ApiError error;
+	private Instant timestamp;
+	private String requestId;
 
 	public static <T> ApiResponse<T> success(T data, String requestId) {
 		return new ApiResponse<>(true, data, null, Instant.now(), requestId);

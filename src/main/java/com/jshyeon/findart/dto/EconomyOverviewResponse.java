@@ -4,6 +4,18 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-public record EconomyOverviewResponse(String id, LocalDate asOfDate, List<IndicatorCard> indicatorCards,
-	List<MarketEvent> scheduledEvents, String abstractText, Instant publishedAt) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class EconomyOverviewResponse {
+	private String id;
+	private LocalDate asOfDate;
+	private List<IndicatorCard> indicatorCards;
+	private List<MarketEvent> scheduledEvents;
+	private String abstractText;
+	private Instant publishedAt;
 }

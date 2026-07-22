@@ -9,9 +9,14 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "original_contents")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OriginalContent {
 	@Id @Column(length = 36, updatable = false) private String id;
 	@Enumerated(EnumType.STRING) @Column(name = "content_type", length = 40, nullable = false) private OriginalContentType contentType;
@@ -28,7 +33,6 @@ public class OriginalContent {
 	@Column(name = "published_at", nullable = false) private Instant publishedAt;
 	@Column(name = "collected_at", nullable = false) private Instant collectedAt;
 
-	protected OriginalContent() { }
 	public OriginalContent(OriginalContentType contentType, String source, String externalId, int revision, String checksum,
 			String sourceUrl, String title, String publisher, String language, String rawBody, String attributesJson,
 			Instant publishedAt, Instant collectedAt) {
@@ -37,11 +41,4 @@ public class OriginalContent {
 		this.publisher = publisher; this.language = language; this.rawBody = rawBody; this.attributesJson = attributesJson;
 		this.publishedAt = publishedAt; this.collectedAt = collectedAt;
 	}
-	public String getId() { return id; } public OriginalContentType getContentType() { return contentType; }
-	public String getSource() { return source; } public String getExternalId() { return externalId; }
-	public int getRevision() { return revision; } public String getChecksum() { return checksum; }
-	public String getSourceUrl() { return sourceUrl; } public String getTitle() { return title; }
-	public String getPublisher() { return publisher; } public String getLanguage() { return language; }
-	public String getRawBody() { return rawBody; } public String getAttributesJson() { return attributesJson; }
-	public Instant getPublishedAt() { return publishedAt; } public Instant getCollectedAt() { return collectedAt; }
 }

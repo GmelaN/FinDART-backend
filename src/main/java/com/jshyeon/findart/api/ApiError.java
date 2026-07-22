@@ -2,5 +2,15 @@ package com.jshyeon.findart.api;
 
 import java.util.List;
 
-public record ApiError(String code, String message, List<ApiFieldError> fieldErrors) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ApiError {
+	private String code;
+	private String message;
+	private List<ApiFieldError> fieldErrors;
 }

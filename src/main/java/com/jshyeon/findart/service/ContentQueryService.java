@@ -21,21 +21,18 @@ import com.jshyeon.findart.entity.ProcessedContent;
 import com.jshyeon.findart.entity.ProcessedContentRepository;
 import com.jshyeon.findart.entity.ProcessedContentType;
 import com.jshyeon.findart.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class ContentQueryService {
 
 	private final ProcessedContentRepository repository;
 	private final ObjectMapper objectMapper;
-
-	public ContentQueryService(ProcessedContentRepository repository, ObjectMapper objectMapper) {
-		this.repository = repository;
-		this.objectMapper = objectMapper;
-	}
 
 	public TodayBriefingResponse today(LocalDate date) {
 		DailyBriefingIngestion.Mode mode = switch (date.getDayOfWeek()) {
@@ -45,13 +42,13 @@ public class ContentQueryService {
 		};
 		return repository.findByContentTypeAndEffectiveDateOrderByPublishedAtDesc(ProcessedContentType.DAILY_BRIEFING, date).stream()
 			.map(document -> Map.entry(document, read(document, DailyBriefingIngestion.class)))
-			.filter(entry -> entry.getValue().mode() == mode)
+			.filter(entry -> entry.getValue().getMode() == mode)
 			.findFirst()
 			.map(entry -> {
 				DailyBriefingIngestion content = entry.getValue();
-				return new TodayBriefingResponse(entry.getKey().getId(), content.briefingDate(), content.mode(), content.title(),
-					content.summary(), content.market(), content.headlines(), content.issues(), content.issueTracking(),
-					content.events(), content.publishedAt());
+				return new TodayBriefingResponse(entry.getKey().getId(), content.getBriefingDate(), content.getMode(), content.getTitle(),
+					content.getSummary(), content.getMarket(), content.getHeadlines(), content.getIssues(), content.getIssueTracking(),
+					content.getEvents(), content.getPublishedAt());
 			})
 			.orElseThrow(() -> new ResourceNotFoundException("No briefing is available for " + date + "."));
 	}
@@ -62,22 +59,22 @@ public class ContentQueryService {
 			.stream().findFirst()
 			.orElseThrow(() -> new ResourceNotFoundException("No economy overview is available on or before " + asOfDate + "."));
 		EconomyOverviewIngestion content = read(document, EconomyOverviewIngestion.class);
-		return new EconomyOverviewResponse(document.getId(), content.asOfDate(), content.indicatorCards(), content.scheduledEvents(),
-			content.abstractText(), content.publishedAt());
+		return new EconomyOverviewResponse(document.getId(), content.getAsOfDate(), content.getIndicatorCards(), content.getScheduledEvents(),
+			content.getAbstractText(), content.getPublishedAt());
 	}
 
 	public List<PolicyBriefingResponse> policyBriefings() {
 		return latest(ProcessedContentType.POLICY_BRIEFING).stream()
 			.map(document -> {
 				PolicyBriefingIngestion content = read(document, PolicyBriefingIngestion.class);
-				return new PolicyBriefingResponse(document.getId(), content.title(), content.body(), content.publishedAt(), content.evidence());
+				return new PolicyBriefingResponse(document.getId(), content.getTitle(), content.getBody(), content.getPublishedAt(), content.getEvidence());
 			})
-			.sorted(Comparator.comparing(PolicyBriefingResponse::publishedAt).reversed())
+			.sorted(Comparator.comparing(PolicyBriefingResponse::getPublishedAt).reversed())
 			.toList();
 	}
 
 	public PolicyBriefingResponse policyBriefing(String id) {
-		return policyBriefings().stream().filter(briefing -> briefing.id().equals(id)).findFirst()
+		return policyBriefings().stream().filter(briefing -> briefing.getId().equals(id)).findFirst()
 			.orElseThrow(() -> new ResourceNotFoundException("Policy briefing " + id + " was not found."));
 	}
 
@@ -85,11 +82,11 @@ public class ContentQueryService {
 		return latest(ProcessedContentType.FEATURED_INDUSTRY).stream()
 			.map(document -> {
 				FeaturedIndustryIngestion content = read(document, FeaturedIndustryIngestion.class);
-				return new FeaturedIndustryResponse(document.getId(), content.sector(), content.segment(), content.title(), content.rationale(),
-					content.positiveScenario(), content.negativeScenario(), content.validFrom(), content.validTo(), content.evidence(), content.companies());
+				return new FeaturedIndustryResponse(document.getId(), content.getSector(), content.getSegment(), content.getTitle(), content.getRationale(),
+					content.getPositiveScenario(), content.getNegativeScenario(), content.getValidFrom(), content.getValidTo(), content.getEvidence(), content.getCompanies());
 			})
-			.filter(industry -> !industry.validFrom().isAfter(asOfDate)
-				&& (industry.validTo() == null || !industry.validTo().isBefore(asOfDate)))
+			.filter(industry -> !industry.getValidFrom().isAfter(asOfDate)
+				&& (industry.getValidTo() == null || !industry.getValidTo().isBefore(asOfDate)))
 			.toList();
 	}
 
@@ -97,8 +94,8 @@ public class ContentQueryService {
 		return latest(ProcessedContentType.FEATURED_INDUSTRY).stream().filter(document -> document.getId().equals(id)).findFirst()
 			.map(document -> {
 				FeaturedIndustryIngestion content = read(document, FeaturedIndustryIngestion.class);
-				return new FeaturedIndustryResponse(document.getId(), content.sector(), content.segment(), content.title(), content.rationale(),
-					content.positiveScenario(), content.negativeScenario(), content.validFrom(), content.validTo(), content.evidence(), content.companies());
+				return new FeaturedIndustryResponse(document.getId(), content.getSector(), content.getSegment(), content.getTitle(), content.getRationale(),
+					content.getPositiveScenario(), content.getNegativeScenario(), content.getValidFrom(), content.getValidTo(), content.getEvidence(), content.getCompanies());
 			})
 			.orElseThrow(() -> new ResourceNotFoundException("Featured industry " + id + " was not found."));
 	}

@@ -12,22 +12,18 @@ import com.jshyeon.findart.dto.IngestionResult;
 import com.jshyeon.findart.entity.ProcessedContent;
 import com.jshyeon.findart.entity.ProcessedContentRepository;
 import com.jshyeon.findart.entity.ProcessedContentType;
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ContentIngestionService {
 
 	private final ProcessedContentRepository repository;
 	private final OriginalContentService originalContentService;
 	private final ObjectMapper objectMapper;
-
-	public ContentIngestionService(ProcessedContentRepository repository, OriginalContentService originalContentService, ObjectMapper objectMapper) {
-		this.repository = repository;
-		this.originalContentService = originalContentService;
-		this.objectMapper = objectMapper;
-	}
 
 	@Transactional
 	public IngestionResult ingest(ProcessedContentType type, String source, String externalId, Instant collectedAt,

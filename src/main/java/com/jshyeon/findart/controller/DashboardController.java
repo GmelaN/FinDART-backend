@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,14 +30,11 @@ import org.springframework.validation.annotation.Validated;
 @RequestMapping("/api/v1")
 @Validated
 @Tag(name = "Dashboard", description = "Market intelligence read endpoints")
+@RequiredArgsConstructor
 public class DashboardController {
 
 	private static final ZoneId KOREA = ZoneId.of("Asia/Seoul");
 	private final ContentQueryService queryService;
-
-	public DashboardController(ContentQueryService queryService) {
-		this.queryService = queryService;
-	}
 
 	@GetMapping("/today")
 	public ApiResponse<TodayBriefingResponse> today(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -58,8 +56,8 @@ public class DashboardController {
 		@RequestParam(defaultValue = "0") @Min(0) int page,
 		@RequestParam(defaultValue = "20") @Min(1) @Max(100) int size, HttpServletRequest request) {
 		List<PolicyBriefingResponse> briefings = queryService.policyBriefings().stream()
-			.filter(briefing -> from == null || !briefing.publishedAt().atZone(KOREA).toLocalDate().isBefore(from))
-			.filter(briefing -> to == null || !briefing.publishedAt().atZone(KOREA).toLocalDate().isAfter(to))
+			.filter(briefing -> from == null || !briefing.getPublishedAt().atZone(KOREA).toLocalDate().isBefore(from))
+			.filter(briefing -> to == null || !briefing.getPublishedAt().atZone(KOREA).toLocalDate().isAfter(to))
 			.toList();
 		return success(PageResponse.of(briefings, page, size), request);
 	}

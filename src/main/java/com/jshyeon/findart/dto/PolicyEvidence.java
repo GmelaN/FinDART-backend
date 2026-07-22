@@ -5,7 +5,18 @@ import java.time.Instant;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-public record PolicyEvidence(@NotNull DocumentType documentType, @NotBlank String title, String publisher,
-	Instant publishedAt, @NotBlank String sourceUrl) {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class PolicyEvidence {
+	@NotNull private DocumentType documentType;
+	@NotBlank private String title;
+	private String publisher;
+	private Instant publishedAt;
+	@NotBlank private String sourceUrl;
 	public enum DocumentType { POLICY_BRIEFING, MINISTRY_PRESS_RELEASE, BUDGET, LEGISLATION, CORPORATE_INVESTMENT, OTHER }
 }
