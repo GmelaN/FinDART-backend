@@ -33,3 +33,4 @@ Pod selector 라벨
 app.kubernetes.io/name: {{ include "findart-backend.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
