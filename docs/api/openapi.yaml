@@ -5,6 +5,8 @@ info:
   description: |
     Financial market intelligence API. All times use RFC 3339 with an offset and all
     dates use ISO 8601 (YYYY-MM-DD). The API keeps historical records permanently.
+    Every response uses the common envelope defined by ApiResponse. Original source
+    content and frontend-ready processed content are stored and accessed separately.
 
     Authentication is intentionally specified but not implemented in the initial
     release. This server will issue JWTs. User-facing endpoints require ROLE_USER;
@@ -19,7 +21,81 @@ tags:
   - name: Featured
   - name: Portfolio
   - name: Collector
+  - name: Original Content
+  - name: Processed Content
 paths:
+  /original-contents:
+    get:
+      tags: [Original Content]
+      summary: List raw source documents and their retained revisions
+      operationId: listOriginalContents
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: contentType
+          in: query
+          schema: { type: string, enum: [ARTICLE, POLICY_DOCUMENT, ECONOMIC_RELEASE, CORPORATE_DISCLOSURE, OTHER] }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200': { description: Paginated original-content records, wrapped in ApiResponse. }
+  /original-contents/{id}:
+    get:
+      tags: [Original Content]
+      summary: Get one raw source-document revision
+      operationId: getOriginalContent
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Original content, including rawBody, wrapped in ApiResponse. }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /processed-contents:
+    get:
+      tags: [Processed Content]
+      summary: List frontend-ready content and its original-content provenance
+      operationId: listProcessedContents
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: contentType
+          in: query
+          schema: { type: string, enum: [DAILY_BRIEFING, ECONOMY_OVERVIEW, POLICY_BRIEFING, FEATURED_INDUSTRY] }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200': { description: Paginated processed-content records, wrapped in ApiResponse. }
+  /processed-contents/{id}:
+    get:
+      tags: [Processed Content]
+      summary: Get one processed-content revision and linked original IDs
+      operationId: getProcessedContent
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Processed content with originalContentIds, wrapped in ApiResponse. }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /collector/original-contents:
+    post:
+      tags: [Original Content]
+      summary: Ingest one original source document before any processing
+      operationId: ingestOriginalContent
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OriginalContentIngestion' }
+      responses:
+        '200': { $ref: '#/components/responses/Upserted' }
+        '201': { $ref: '#/components/responses/Created' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
   /auth/login:
     post:
       tags: [Authentication]
@@ -37,7 +113,7 @@ paths:
           description: Tokens issued
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/TokenResponse' }
+              schema: { $ref: '#/components/schemas/ApiResponseTokenResponse' }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /auth/refresh:
     post:
@@ -56,7 +132,7 @@ paths:
           description: Tokens rotated
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/TokenResponse' }
+              schema: { $ref: '#/components/schemas/ApiResponseTokenResponse' }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /auth/logout:
     post:
@@ -66,7 +142,11 @@ paths:
       operationId: logout
       security: [{ bearerAuth: [] }]
       responses:
-        '204': { description: Refresh token revoked }
+        '200':
+          description: Refresh token revoked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiResponse' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /today:
@@ -83,7 +163,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TodayBriefing'
+                $ref: '#/components/schemas/ApiResponseTodayBriefing'
         '404': { $ref: '#/components/responses/NotFound' }
 
   /economy-overview:
@@ -103,7 +183,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EconomyOverview'
+                $ref: '#/components/schemas/ApiResponseEconomyOverview'
         '404': { $ref: '#/components/responses/NotFound' }
 
   /policy-briefings:
@@ -123,7 +203,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PolicyBriefingPage'
+                $ref: '#/components/schemas/ApiResponsePolicyBriefingPage'
 
   /policy-briefings/{briefingId}:
     get:
@@ -138,7 +218,7 @@ paths:
           description: Policy briefing
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/PolicyBriefing' }
+              schema: { $ref: '#/components/schemas/ApiResponsePolicyBriefing' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   /featured-industries:
@@ -158,7 +238,7 @@ paths:
           description: Industry outlooks valid on the requested date
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/FeaturedIndustryPage' }
+              schema: { $ref: '#/components/schemas/ApiResponseFeaturedIndustryPage' }
 
   /featured-industries/{industryId}:
     get:
@@ -173,7 +253,7 @@ paths:
           description: Industry outlook
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/FeaturedIndustry' }
+              schema: { $ref: '#/components/schemas/ApiResponseFeaturedIndustry' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   /portfolio:
@@ -190,7 +270,7 @@ paths:
           description: Latest portfolio analysis
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/PortfolioAnalysis' }
+              schema: { $ref: '#/components/schemas/ApiResponsePortfolioAnalysis' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   /portfolio/history:
@@ -207,26 +287,9 @@ paths:
           description: Snapshots ordered by evaluatedAt descending
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/PortfolioAnalysisPage' }
+              schema: { $ref: '#/components/schemas/ApiResponsePortfolioAnalysisPage' }
 
-  /collector/articles:
-    post:
-      tags: [Collector]
-      summary: Ingest one raw article or source document
-      operationId: ingestArticle
-      security: [{ bearerAuth: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ArticleIngestion' }
-      responses:
-        '200': { $ref: '#/components/responses/Upserted' }
-        '201': { $ref: '#/components/responses/Created' }
-        '400': { $ref: '#/components/responses/ValidationError' }
-        '409': { $ref: '#/components/responses/Conflict' }
-
-  /collector/daily-briefings:
+  /collector/processed-contents/daily-briefings:
     post:
       tags: [Collector]
       summary: Ingest a rendered Today briefing and its article/issue references
@@ -243,7 +306,7 @@ paths:
         '400': { $ref: '#/components/responses/ValidationError' }
         '409': { $ref: '#/components/responses/Conflict' }
 
-  /collector/economy-overviews:
+  /collector/processed-contents/economy-overviews:
     post:
       tags: [Collector]
       summary: Ingest an economy overview with indicator cards and events
@@ -260,7 +323,7 @@ paths:
         '400': { $ref: '#/components/responses/ValidationError' }
         '409': { $ref: '#/components/responses/Conflict' }
 
-  /collector/policy-briefings:
+  /collector/processed-contents/policy-briefings:
     post:
       tags: [Collector]
       summary: Ingest a policy briefing and linked policy sources
@@ -277,7 +340,7 @@ paths:
         '400': { $ref: '#/components/responses/ValidationError' }
         '409': { $ref: '#/components/responses/Conflict' }
 
-  /collector/featured-industries:
+  /collector/processed-contents/featured-industries:
     post:
       tags: [Collector]
       summary: Ingest a medium-term industry outlook
@@ -339,33 +402,129 @@ components:
       description: A new revision was stored.
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/IngestionResult' }
+          schema: { $ref: '#/components/schemas/ApiResponseIngestionResult' }
     Upserted:
       description: The identical resource was accepted or a newer revision was stored.
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/IngestionResult' }
+          schema: { $ref: '#/components/schemas/ApiResponseIngestionResult' }
     NotFound:
       description: No resource is available for the request.
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ProblemDetail' }
+          schema: { $ref: '#/components/schemas/ApiErrorResponse' }
     Unauthorized:
       description: Authentication is absent, expired, invalid, or revoked.
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ProblemDetail' }
+          schema: { $ref: '#/components/schemas/ApiErrorResponse' }
     Conflict:
       description: A conflicting immutable revision or an invalid reference was supplied.
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ProblemDetail' }
+          schema: { $ref: '#/components/schemas/ApiErrorResponse' }
     ValidationError:
       description: The payload failed validation.
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ProblemDetail' }
+          schema: { $ref: '#/components/schemas/ApiErrorResponse' }
   schemas:
+    ApiResponse:
+      type: object
+      required: [success, data, error, timestamp, requestId]
+      properties:
+        success: { type: boolean }
+        data: {}
+        error:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/ApiError'
+        timestamp: { type: string, format: date-time }
+        requestId: { type: string, description: Matches the X-Request-Id response header. }
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, enum: [VALIDATION_FAILED, UNAUTHORIZED, NOT_FOUND, CONFLICT, INTERNAL_ERROR] }
+        message: { type: string }
+        fieldErrors:
+          type: array
+          items: { $ref: '#/components/schemas/ApiFieldError' }
+    ApiFieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field: { type: string }
+        message: { type: string }
+    ApiErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            success: { const: false }
+            data: { type: 'null' }
+            error: { $ref: '#/components/schemas/ApiError' }
+    ApiResponseIngestionResult:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/IngestionResult' }
+    ApiResponseTokenResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/TokenResponse' }
+    ApiResponseTodayBriefing:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/TodayBriefing' }
+    ApiResponseEconomyOverview:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/EconomyOverview' }
+    ApiResponsePolicyBriefingPage:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/PolicyBriefingPage' }
+    ApiResponsePolicyBriefing:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/PolicyBriefing' }
+    ApiResponseFeaturedIndustryPage:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/FeaturedIndustryPage' }
+    ApiResponseFeaturedIndustry:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/FeaturedIndustry' }
+    ApiResponsePortfolioAnalysis:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/PortfolioAnalysis' }
+    ApiResponsePortfolioAnalysisPage:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/PortfolioAnalysisPage' }
+
     LoginRequest:
       type: object
       required: [username, password]
@@ -460,7 +619,7 @@ components:
         scheduledEvents:
           type: array
           items: { $ref: '#/components/schemas/Event' }
-        abstract: { type: string }
+        abstractText: { type: string }
         publishedAt: { type: string, format: date-time }
 
     IndicatorCard:
@@ -587,27 +746,29 @@ components:
         rationale: { type: string }
         sourceUrl: { type: string, format: uri }
 
-    ArticleIngestion:
+    OriginalContentIngestion:
       type: object
-      required: [source, externalId, sourceUrl, title, publishedAt, collectedAt]
+      required: [contentType, source, externalId, sourceUrl, title, publishedAt, collectedAt]
       properties:
+        contentType: { type: string, enum: [ARTICLE, POLICY_DOCUMENT, ECONOMIC_RELEASE, CORPORATE_DISCLOSURE, OTHER] }
         source: { type: string, example: MINISTRY_OF_TRADE }
         externalId: { type: string, description: Stable identifier scoped to source. }
         sourceUrl: { type: string, format: uri }
         title: { type: string }
-        body: { type: string, description: Original body when license permits storage. }
+        rawBody: { type: string, description: Original body when license permits storage. }
         publisher: { type: string }
         publishedAt: { type: string, format: date-time }
         collectedAt: { type: string, format: date-time }
         language: { type: string, default: ko }
-        checksum: { type: string, description: SHA-256 of the canonical collected payload. }
+        attributes: { type: object, additionalProperties: true }
 
     DailyBriefingIngestion:
       allOf:
         - $ref: '#/components/schemas/IngestionMetadata'
         - type: object
-          required: [briefingDate, mode, title, summary, market, headlines, issues, issueTracking, events, publishedAt]
+          required: [originalContentIds, briefingDate, mode, title, summary, market, headlines, issues, issueTracking, events, publishedAt]
           properties:
+            originalContentIds: { type: array, minItems: 1, items: { type: string, format: uuid } }
             briefingDate: { type: string, format: date }
             mode: { type: string, enum: [DAILY, WEEKLY_RECAP, NEXT_WEEK_OUTLOOK] }
             title: { type: string }
@@ -623,20 +784,22 @@ components:
       allOf:
         - $ref: '#/components/schemas/IngestionMetadata'
         - type: object
-          required: [asOfDate, indicatorCards, scheduledEvents, abstract, publishedAt]
+          required: [originalContentIds, asOfDate, indicatorCards, scheduledEvents, abstractText, publishedAt]
           properties:
+            originalContentIds: { type: array, minItems: 1, items: { type: string, format: uuid } }
             asOfDate: { type: string, format: date }
             indicatorCards: { type: array, items: { $ref: '#/components/schemas/IndicatorCard' } }
             scheduledEvents: { type: array, items: { $ref: '#/components/schemas/Event' } }
-            abstract: { type: string }
+            abstractText: { type: string }
             publishedAt: { type: string, format: date-time }
 
     PolicyBriefingIngestion:
       allOf:
         - $ref: '#/components/schemas/IngestionMetadata'
         - type: object
-          required: [title, body, publishedAt, evidence]
+          required: [originalContentIds, title, body, publishedAt, evidence]
           properties:
+            originalContentIds: { type: array, minItems: 1, items: { type: string, format: uuid } }
             title: { type: string }
             body: { type: string }
             publishedAt: { type: string, format: date-time }
@@ -646,8 +809,9 @@ components:
       allOf:
         - $ref: '#/components/schemas/IngestionMetadata'
         - type: object
-          required: [sector, segment, title, rationale, positiveScenario, negativeScenario, validFrom, companies]
+          required: [originalContentIds, sector, segment, title, rationale, positiveScenario, negativeScenario, validFrom, companies]
           properties:
+            originalContentIds: { type: array, minItems: 1, items: { type: string, format: uuid } }
             sector: { type: string }
             segment: { type: string }
             title: { type: string }
@@ -675,24 +839,6 @@ components:
         id: { type: string, format: uuid }
         revision: { type: integer, minimum: 1 }
         status: { type: string, enum: [CREATED, DUPLICATE, REVISED] }
-
-    ProblemDetail:
-      type: object
-      required: [type, title, status, detail, instance]
-      properties:
-        type: { type: string, format: uri }
-        title: { type: string }
-        status: { type: integer }
-        detail: { type: string }
-        instance: { type: string }
-        fieldErrors:
-          type: array
-          items:
-            type: object
-            required: [field, message]
-            properties:
-              field: { type: string }
-              message: { type: string }
 
     PolicyBriefingPage:
       type: object
