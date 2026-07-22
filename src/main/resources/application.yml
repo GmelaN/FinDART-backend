@@ -1,4 +1,7 @@
 spring:
+    config:
+        import: optional:file:.env[.properties]
+
     application:
         name: findart
 
@@ -8,25 +11,37 @@ spring:
         password: ${SPRING_DATASOURCE_PASSWORD:}
         driver-class-name: org.mariadb.jdbc.Driver
 
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
-      connection-timeout: 30000
+        hikari:
+            maximum-pool-size: 10
+            minimum-idle: 2
+            connection-timeout: 30000
 
     jpa:
         database-platform: org.hibernate.dialect.MariaDBDialect
         hibernate:
-            ddl-auto: create
+            ddl-auto: validate
         open-in-view: false
         properties:
             hibernate:
                 format_sql: true
 
+    flyway:
+        enabled: true
+        locations: classpath:db/migration
+
 server:
     port: ${SERVER_PORT:8080}
+
+springdoc:
+    api-docs:
+        path: /v3/api-docs
+    swagger-ui:
+        path: /swagger-ui.html
+        operations-sorter: alpha
+        tags-sorter: alpha
 
 management:
     endpoints:
         web:
-        exposure:
-            include: health,info,prometheus
+            exposure:
+                include: health,info,prometheus

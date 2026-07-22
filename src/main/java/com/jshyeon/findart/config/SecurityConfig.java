@@ -1,0 +1,21 @@
+package com.jshyeon.findart.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+public class SecurityConfig {
+
+	@Bean
+	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		// JWT issuance and verification are specified but deliberately deferred.
+		return http
+			.csrf(csrf -> csrf.disable())
+			.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+			.httpBasic(Customizer.withDefaults())
+			.build();
+	}
+}
