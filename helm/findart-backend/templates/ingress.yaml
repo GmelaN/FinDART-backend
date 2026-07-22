@@ -1,0 +1,6 @@
+ingress:
+  enabled: true
+  className: traefik
+  host: findart.jshyeon.com
+  path: /
+  pathType: Prefix
