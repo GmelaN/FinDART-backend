@@ -1,0 +1,723 @@
+openapi: 3.1.0
+info:
+  title: FinDART API
+  version: 1.0.0-draft
+  description: |
+    Financial market intelligence API. All times use RFC 3339 with an offset and all
+    dates use ISO 8601 (YYYY-MM-DD). The API keeps historical records permanently.
+
+    Authentication is intentionally specified but not implemented in the initial
+    release. This server will issue JWTs. User-facing endpoints require ROLE_USER;
+    collector endpoints require ROLE_COLLECTOR. A collector must never use a user token.
+servers:
+  - url: /api/v1
+tags:
+  - name: Authentication
+  - name: Today
+  - name: Economy
+  - name: Policy
+  - name: Featured
+  - name: Portfolio
+  - name: Collector
+paths:
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Issue a user JWT
+      description: Not implemented in the initial release. The server will authenticate local credentials and issue a short-lived access token and a refresh token.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Tokens issued
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Rotate a refresh token and issue a new token pair
+      description: Not implemented in the initial release. Refresh tokens must be stored and revocable server-side.
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshTokenRequest' }
+      responses:
+        '200':
+          description: Tokens rotated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Revoke the current refresh token
+      description: Not implemented in the initial release. Access tokens remain valid until expiration; the associated refresh token is revoked immediately.
+      operationId: logout
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Refresh token revoked }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /today:
+    get:
+      tags: [Today]
+      summary: Get the daily, Saturday recap, or Sunday outlook briefing
+      operationId: getToday
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/BriefingDate'
+      responses:
+        '200':
+          description: Briefing for the requested Korea Standard Time date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodayBriefing'
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /economy-overview:
+    get:
+      tags: [Economy]
+      summary: Get macroeconomic trends, scheduled events, and an interpretation
+      operationId: getEconomyOverview
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: asOfDate
+          in: query
+          description: Return the latest overview published on or before this date.
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Latest available overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EconomyOverview'
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /policy-briefings:
+    get:
+      tags: [Policy]
+      summary: List policy briefings
+      operationId: listPolicyBriefings
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Descending by publication time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyBriefingPage'
+
+  /policy-briefings/{briefingId}:
+    get:
+      tags: [Policy]
+      summary: Get a policy briefing with its evidence links
+      operationId: getPolicyBriefing
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/BriefingId'
+      responses:
+        '200':
+          description: Policy briefing
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PolicyBriefing' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /featured-industries:
+    get:
+      tags: [Featured]
+      summary: List industries selected for the medium-term outlook
+      operationId: listFeaturedIndustries
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: asOfDate
+          in: query
+          schema: { type: string, format: date }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Industry outlooks valid on the requested date
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FeaturedIndustryPage' }
+
+  /featured-industries/{industryId}:
+    get:
+      tags: [Featured]
+      summary: Get one featured industry and its related companies
+      operationId: getFeaturedIndustry
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IndustryId'
+      responses:
+        '200':
+          description: Industry outlook
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FeaturedIndustry' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /portfolio:
+    get:
+      tags: [Portfolio]
+      summary: Get the latest portfolio snapshot and analysis
+      description: |
+        Excel upload and portfolio ingestion are deferred. This endpoint defines the
+        read model that a later upload/import feature will populate.
+      operationId: getLatestPortfolio
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Latest portfolio analysis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PortfolioAnalysis' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /portfolio/history:
+    get:
+      tags: [Portfolio]
+      summary: List preserved portfolio snapshots
+      operationId: listPortfolioHistory
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Snapshots ordered by evaluatedAt descending
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PortfolioAnalysisPage' }
+
+  /collector/articles:
+    post:
+      tags: [Collector]
+      summary: Ingest one raw article or source document
+      operationId: ingestArticle
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ArticleIngestion' }
+      responses:
+        '200': { $ref: '#/components/responses/Upserted' }
+        '201': { $ref: '#/components/responses/Created' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /collector/daily-briefings:
+    post:
+      tags: [Collector]
+      summary: Ingest a rendered Today briefing and its article/issue references
+      operationId: ingestDailyBriefing
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DailyBriefingIngestion' }
+      responses:
+        '200': { $ref: '#/components/responses/Upserted' }
+        '201': { $ref: '#/components/responses/Created' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /collector/economy-overviews:
+    post:
+      tags: [Collector]
+      summary: Ingest an economy overview with indicator cards and events
+      operationId: ingestEconomyOverview
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EconomyOverviewIngestion' }
+      responses:
+        '200': { $ref: '#/components/responses/Upserted' }
+        '201': { $ref: '#/components/responses/Created' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /collector/policy-briefings:
+    post:
+      tags: [Collector]
+      summary: Ingest a policy briefing and linked policy sources
+      operationId: ingestPolicyBriefing
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PolicyBriefingIngestion' }
+      responses:
+        '200': { $ref: '#/components/responses/Upserted' }
+        '201': { $ref: '#/components/responses/Created' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /collector/featured-industries:
+    post:
+      tags: [Collector]
+      summary: Ingest a medium-term industry outlook
+      operationId: ingestFeaturedIndustry
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FeaturedIndustryIngestion' }
+      responses:
+        '200': { $ref: '#/components/responses/Upserted' }
+        '201': { $ref: '#/components/responses/Created' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Server-issued JWT. `ROLE_USER` for read APIs and `ROLE_COLLECTOR` for ingest APIs.
+  parameters:
+    BriefingDate:
+      name: date
+      in: query
+      required: true
+      description: Date evaluated in Asia/Seoul. Saturday returns WEEKLY_RECAP; Sunday returns NEXT_WEEK_OUTLOOK.
+      schema: { type: string, format: date }
+    FromDate:
+      name: from
+      in: query
+      schema: { type: string, format: date }
+    ToDate:
+      name: to
+      in: query
+      schema: { type: string, format: date }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    Size:
+      name: size
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    BriefingId:
+      name: briefingId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    IndustryId:
+      name: industryId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    Created:
+      description: A new revision was stored.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/IngestionResult' }
+    Upserted:
+      description: The identical resource was accepted or a newer revision was stored.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/IngestionResult' }
+    NotFound:
+      description: No resource is available for the request.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+    Unauthorized:
+      description: Authentication is absent, expired, invalid, or revoked.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+    Conflict:
+      description: A conflicting immutable revision or an invalid reference was supplied.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+    ValidationError:
+      description: The payload failed validation.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+  schemas:
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string, format: password }
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string }
+    TokenResponse:
+      type: object
+      required: [accessToken, refreshToken, tokenType, expiresIn]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        tokenType: { type: string, const: Bearer }
+        expiresIn: { type: integer, description: Access token lifetime in seconds. }
+
+    TodayBriefing:
+      type: object
+      required: [id, briefingDate, mode, title, summary, market, headlines, issues, issueTracking, events, publishedAt]
+      properties:
+        id: { type: string, format: uuid }
+        briefingDate: { type: string, format: date }
+        mode: { type: string, enum: [DAILY, WEEKLY_RECAP, NEXT_WEEK_OUTLOOK] }
+        title: { type: string, example: Today }
+        summary: { type: string }
+        market:
+          type: array
+          items: { $ref: '#/components/schemas/MarketRegime' }
+        headlines:
+          type: array
+          items: { $ref: '#/components/schemas/ContentReference' }
+        issues:
+          type: array
+          items: { $ref: '#/components/schemas/ContentReference' }
+        issueTracking:
+          type: array
+          items: { $ref: '#/components/schemas/TrackedIssue' }
+        events:
+          type: array
+          items: { $ref: '#/components/schemas/Event' }
+        publishedAt: { type: string, format: date-time }
+
+    MarketRegime:
+      type: object
+      required: [category, phase, rationale]
+      properties:
+        category: { type: string, enum: [INTEREST_RATE, EXCHANGE_RATE, INFLATION, GROWTH, EMPLOYMENT, TRADE] }
+        phase: { type: string, example: EASING_EXPECTATION }
+        rationale: { type: string }
+
+    ContentReference:
+      type: object
+      required: [id, title]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        sourceUrl: { type: string, format: uri }
+
+    TrackedIssue:
+      type: object
+      required: [title, developments]
+      properties:
+        title: { type: string }
+        developments:
+          type: array
+          items: { type: string }
+
+    Event:
+      type: object
+      required: [name, eventType, scheduledAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        eventType: { type: string, enum: [MONETARY_POLICY, IPO, OPTIONS_EXPIRY, ECONOMIC_RELEASE, GOVERNMENT, CORPORATE, OTHER] }
+        scheduledAt: { type: string, format: date-time }
+        summary: { type: string }
+        sourceUrl: { type: string, format: uri }
+
+    EconomyOverview:
+      type: object
+      required: [id, asOfDate, indicatorCards, scheduledEvents, abstract, publishedAt]
+      properties:
+        id: { type: string, format: uuid }
+        asOfDate: { type: string, format: date }
+        indicatorCards:
+          type: array
+          items: { $ref: '#/components/schemas/IndicatorCard' }
+        scheduledEvents:
+          type: array
+          items: { $ref: '#/components/schemas/Event' }
+        abstract: { type: string }
+        publishedAt: { type: string, format: date-time }
+
+    IndicatorCard:
+      type: object
+      required: [indicator, value, unit, period, direction, horizon, interpretation]
+      properties:
+        indicator: { type: string, enum: [INTEREST_RATE, INFLATION, EXCHANGE_RATE, GROWTH, EMPLOYMENT, EXPORTS, IMPORTS] }
+        value: { type: number }
+        unit: { type: string, example: '%' }
+        period: { type: string, example: '2026-Q2' }
+        change: { type: number }
+        direction: { type: string, enum: [UP, DOWN, FLAT, MIXED] }
+        horizon: { type: string, enum: [QUARTERLY, SEMIANNUAL] }
+        interpretation: { type: string }
+        sourceReferences:
+          type: array
+          items: { $ref: '#/components/schemas/ContentReference' }
+
+    PolicyBriefing:
+      type: object
+      required: [id, title, body, publishedAt, evidence]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        body: { type: string }
+        publishedAt: { type: string, format: date-time }
+        evidence:
+          type: array
+          items: { $ref: '#/components/schemas/PolicyEvidence' }
+
+    PolicyEvidence:
+      type: object
+      required: [documentType, title, sourceUrl]
+      properties:
+        documentType: { type: string, enum: [POLICY_BRIEFING, MINISTRY_PRESS_RELEASE, BUDGET, LEGISLATION, CORPORATE_INVESTMENT, OTHER] }
+        title: { type: string }
+        publisher: { type: string }
+        publishedAt: { type: string, format: date-time }
+        sourceUrl: { type: string, format: uri }
+
+    FeaturedIndustry:
+      type: object
+      required: [id, sector, segment, title, rationale, positiveScenario, negativeScenario, validFrom, companies]
+      properties:
+        id: { type: string, format: uuid }
+        sector: { type: string, example: 제조업 }
+        segment: { type: string, example: 전력기기 }
+        title: { type: string }
+        rationale: { type: string }
+        positiveScenario: { type: string }
+        negativeScenario: { type: string }
+        validFrom: { type: string, format: date }
+        validTo: { type: string, format: date }
+        evidence:
+          type: array
+          items: { $ref: '#/components/schemas/ContentReference' }
+        companies:
+          type: array
+          items: { $ref: '#/components/schemas/FeaturedCompany' }
+
+    FeaturedCompany:
+      type: object
+      required: [name, primaryBusiness, companySize, operatingProfitTrend]
+      properties:
+        name: { type: string }
+        ticker: { type: string }
+        primaryBusiness: { type: string }
+        companySize: { type: string, enum: [LARGE_CAP, MID_CAP, SMALL_CAP, UNCLASSIFIED] }
+        operatingProfitTrend: { type: string, enum: [IMPROVING, DETERIORATING, STABLE, VOLATILE, UNKNOWN] }
+
+    PortfolioAnalysis:
+      type: object
+      required: [id, evaluatedAt, allocations, riskExposures, riskScenarios, watchIndicators]
+      properties:
+        id: { type: string, format: uuid }
+        evaluatedAt: { type: string, format: date-time }
+        allocations:
+          type: array
+          items: { $ref: '#/components/schemas/Allocation' }
+        pros:
+          type: array
+          items: { type: string }
+        cons:
+          type: array
+          items: { type: string }
+        riskExposures:
+          type: array
+          items: { $ref: '#/components/schemas/RiskExposure' }
+        riskScenarios:
+          type: array
+          items: { $ref: '#/components/schemas/RiskScenario' }
+        watchIndicators:
+          type: array
+          items: { $ref: '#/components/schemas/WatchIndicator' }
+
+    Allocation:
+      type: object
+      required: [assetClass, percentage]
+      properties:
+        assetClass: { type: string, enum: [KOREAN_EQUITY, US_EQUITY, BOND, CASH, REAL_ESTATE, ALTERNATIVE, OTHER] }
+        percentage: { type: number, minimum: 0, maximum: 100 }
+
+    RiskExposure:
+      type: object
+      required: [factor, level]
+      properties:
+        factor: { type: string, enum: [INTEREST_RATE, EXCHANGE_RATE, SEMICONDUCTOR, KRW_ASSETS, CREDIT, GEOGRAPHY, LIQUIDITY, OTHER] }
+        level: { type: string, enum: [LOW, MEDIUM, HIGH] }
+        rationale: { type: string }
+
+    RiskScenario:
+      type: object
+      required: [title, description, severity]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        severity: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+
+    WatchIndicator:
+      type: object
+      required: [name, rationale]
+      properties:
+        name: { type: string }
+        rationale: { type: string }
+        sourceUrl: { type: string, format: uri }
+
+    ArticleIngestion:
+      type: object
+      required: [source, externalId, sourceUrl, title, publishedAt, collectedAt]
+      properties:
+        source: { type: string, example: MINISTRY_OF_TRADE }
+        externalId: { type: string, description: Stable identifier scoped to source. }
+        sourceUrl: { type: string, format: uri }
+        title: { type: string }
+        body: { type: string, description: Original body when license permits storage. }
+        publisher: { type: string }
+        publishedAt: { type: string, format: date-time }
+        collectedAt: { type: string, format: date-time }
+        language: { type: string, default: ko }
+        checksum: { type: string, description: SHA-256 of the canonical collected payload. }
+
+    DailyBriefingIngestion:
+      allOf:
+        - $ref: '#/components/schemas/IngestionMetadata'
+        - type: object
+          required: [briefingDate, mode, title, summary, market, headlines, issues, issueTracking, events, publishedAt]
+          properties:
+            briefingDate: { type: string, format: date }
+            mode: { type: string, enum: [DAILY, WEEKLY_RECAP, NEXT_WEEK_OUTLOOK] }
+            title: { type: string }
+            summary: { type: string }
+            market: { type: array, items: { $ref: '#/components/schemas/MarketRegime' } }
+            headlines: { type: array, items: { $ref: '#/components/schemas/ContentReference' } }
+            issues: { type: array, items: { $ref: '#/components/schemas/ContentReference' } }
+            issueTracking: { type: array, items: { $ref: '#/components/schemas/TrackedIssue' } }
+            events: { type: array, items: { $ref: '#/components/schemas/Event' } }
+            publishedAt: { type: string, format: date-time }
+
+    EconomyOverviewIngestion:
+      allOf:
+        - $ref: '#/components/schemas/IngestionMetadata'
+        - type: object
+          required: [asOfDate, indicatorCards, scheduledEvents, abstract, publishedAt]
+          properties:
+            asOfDate: { type: string, format: date }
+            indicatorCards: { type: array, items: { $ref: '#/components/schemas/IndicatorCard' } }
+            scheduledEvents: { type: array, items: { $ref: '#/components/schemas/Event' } }
+            abstract: { type: string }
+            publishedAt: { type: string, format: date-time }
+
+    PolicyBriefingIngestion:
+      allOf:
+        - $ref: '#/components/schemas/IngestionMetadata'
+        - type: object
+          required: [title, body, publishedAt, evidence]
+          properties:
+            title: { type: string }
+            body: { type: string }
+            publishedAt: { type: string, format: date-time }
+            evidence: { type: array, minItems: 1, items: { $ref: '#/components/schemas/PolicyEvidence' } }
+
+    FeaturedIndustryIngestion:
+      allOf:
+        - $ref: '#/components/schemas/IngestionMetadata'
+        - type: object
+          required: [sector, segment, title, rationale, positiveScenario, negativeScenario, validFrom, companies]
+          properties:
+            sector: { type: string }
+            segment: { type: string }
+            title: { type: string }
+            rationale: { type: string }
+            positiveScenario: { type: string }
+            negativeScenario: { type: string }
+            validFrom: { type: string, format: date }
+            validTo: { type: string, format: date }
+            evidence: { type: array, items: { $ref: '#/components/schemas/ContentReference' } }
+            companies: { type: array, items: { $ref: '#/components/schemas/FeaturedCompany' } }
+
+    IngestionMetadata:
+      type: object
+      required: [source, externalId, collectedAt]
+      properties:
+        source: { type: string, description: Logical producer name, not an untrusted display label. }
+        externalId: { type: string, description: Stable producer identifier. A changed payload creates a permanent new revision. }
+        collectedAt: { type: string, format: date-time }
+        checksum: { type: string, description: SHA-256 of the canonical payload. }
+
+    IngestionResult:
+      type: object
+      required: [id, revision, status]
+      properties:
+        id: { type: string, format: uuid }
+        revision: { type: integer, minimum: 1 }
+        status: { type: string, enum: [CREATED, DUPLICATE, REVISED] }
+
+    ProblemDetail:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field: { type: string }
+              message: { type: string }
+
+    PolicyBriefingPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages]
+      properties:
+        content: { type: array, items: { $ref: '#/components/schemas/PolicyBriefing' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
+    FeaturedIndustryPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages]
+      properties:
+        content: { type: array, items: { $ref: '#/components/schemas/FeaturedIndustry' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
+    PortfolioAnalysisPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages]
+      properties:
+        content: { type: array, items: { $ref: '#/components/schemas/PortfolioAnalysis' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
