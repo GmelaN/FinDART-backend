@@ -19,8 +19,7 @@ service:
 ingress:
   enabled: true
   className: traefik
-  host: findart.jshyeon.com
-  path: /
+  path: /findart
   pathType: Prefix
 
 application:
