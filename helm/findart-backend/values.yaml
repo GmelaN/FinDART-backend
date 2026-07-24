@@ -19,7 +19,8 @@ service:
 ingress:
   enabled: true
   className: traefik
-  host: findart.internal
+  internalHost: findart.internal
+  externalHost: findart.jshyeon.com
   path: /
   pathType: Prefix
 
