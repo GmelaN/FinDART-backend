@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/gmelan/findart-backend
-  tag: "d05bd26304c2b14352c12de5946ab48f101204cb"
+  tag: "a4d8cea5cd37e92a5e9c7417c6fcd68bc0261137"
   pullPolicy: IfNotPresent
 
 imagePullSecrets:
