@@ -4,6 +4,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -12,7 +14,11 @@ import java.util.List;
 import com.jshyeon.findart.dto.DailyBriefingIngestion;
 import com.jshyeon.findart.dto.MarketRegime;
 import com.jshyeon.findart.dto.OriginalContentIngestion;
+import com.jshyeon.findart.document.ContentDocumentRepository;
+import com.jshyeon.findart.document.SummaryDocumentRepository;
+import com.jshyeon.findart.entity.ContentReferenceRepository;
 import com.jshyeon.findart.entity.OriginalContentType;
+import com.jshyeon.findart.entity.SummaryReferenceRepository;
 import com.jshyeon.findart.MariaDbTestcontainersConfiguration;
 
 import org.junit.jupiter.api.Test;
@@ -38,6 +44,18 @@ class CollectorControllerIntegrationTests {
 
 	@Autowired
 	private ObjectMapper objectMapper;
+
+	@Autowired
+	private ContentReferenceRepository contentReferenceRepository;
+
+	@Autowired
+	private SummaryReferenceRepository summaryReferenceRepository;
+
+	@Autowired
+	private ContentDocumentRepository contentDocumentRepository;
+
+	@Autowired
+	private SummaryDocumentRepository summaryDocumentRepository;
 
 	@Test
 	void storesAndReturnsDailyBriefing() throws Exception {
@@ -73,6 +91,13 @@ class CollectorControllerIntegrationTests {
 			.andExpect(jsonPath("$.success").value(true))
 			.andExpect(jsonPath("$.data.title").value("Today"))
 			.andExpect(jsonPath("$.data.mode").value("DAILY"));
+
+		assertTrue(contentReferenceRepository.existsById(originalId));
+		assertTrue(summaryReferenceRepository.existsById(processedId));
+		assertEquals("Original source body",
+			contentDocumentRepository.findById(originalId).orElseThrow().getBody().getRaw());
+		assertEquals("Market summary",
+			summaryDocumentRepository.findById(processedId).orElseThrow().getSummaryText());
 	}
 
 	@Test
