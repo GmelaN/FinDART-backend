@@ -33,6 +33,12 @@ database:
   usernameKey: username
   passwordKey: password
 
+mongodb:
+  secretName: findart-db-secret
+  uriKey: mongodb-uri
+  database: findart
+  authenticationDatabase: findart
+
 resources:
   requests:
     cpu: 100m

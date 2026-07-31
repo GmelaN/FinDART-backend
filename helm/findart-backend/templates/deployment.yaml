@@ -57,6 +57,18 @@ spec:
                   name: {{ .Values.database.secretName }}
                   key: {{ .Values.database.passwordKey }}
 
+            - name: SPRING_DATA_MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.secretName }}
+                  key: {{ .Values.mongodb.uriKey }}
+
+            - name: SPRING_DATA_MONGODB_DATABASE
+              value: {{ .Values.mongodb.database | quote }}
+
+            - name: SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE
+              value: {{ .Values.mongodb.authenticationDatabase | quote }}
+
           {{- if .Values.probes.startup.enabled }}
           startupProbe:
             tcpSocket:
