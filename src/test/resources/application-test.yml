@@ -1,4 +1,8 @@
 spring:
+    mongodb:
+        username: ""
+        password: ""
+
     jpa:
         hibernate:
             ddl-auto: validate
